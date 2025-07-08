@@ -1,5 +1,0 @@
-discord.py
-python-dotenv
-google-generativeai
-Pillow
-aiofiles
