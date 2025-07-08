@@ -1,0 +1,483 @@
+
+
+import discord
+from discord.ext import commands
+from discord import app_commands
+from typing import List, Dict, Any, Optional
+from datetime import datetime, timezone
+import uuid
+import re
+
+# Importation pour l'autocomplétion et la vérification de type
+from .manager_cog import ManagerCog
+
+# --- Vues et Modals pour l'Interaction avec le Catalogue ---
+
+class PaymentInfoModal(discord.ui.Modal, title="Informations de Paiement"):
+    payment_account = discord.ui.TextInput(
+        label="Email/Nom d'utilisateur de votre compte",
+        placeholder="ex: votre.email@example.com ou @votre_pseudo",
+        required=True
+    )
+
+    def __init__(self, manager: 'ManagerCog', transaction_id: str, staff_channel_id: int, product: dict, option: Optional[dict]):
+        super().__init__(timeout=None)
+        self.manager = manager
+        self.transaction_id = transaction_id
+        self.staff_channel_id = staff_channel_id
+        self.product = product
+        self.option = option
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        # 1. Mettre à jour le message staff
+        staff_channel = self.manager.bot.get_channel(self.staff_channel_id)
+        original_staff_message = None
+
+        if staff_channel:
+            try:
+                async for message in staff_channel.history(limit=100):
+                    if message.embeds and message.embeds[0].footer and f"ID de Transaction: {self.transaction_id}" in message.embeds[0].footer.text:
+                        original_staff_message = message
+                        break
+            except discord.Forbidden:
+                print(f"Permissions manquantes pour lire l'historique de {staff_channel.name}")
+
+        if original_staff_message:
+            original_embed = original_staff_message.embeds[0]
+            new_embed = original_embed.copy()
+            new_embed.title = "Paiement Signalé - EN ATTENTE DE VALIDATION"
+            new_embed.color = discord.Color.blue()
+            new_embed.add_field(
+                name="📝 Info de paiement fournie par l'utilisateur",
+                value=f"`{self.payment_account.value}`",
+                inline=False
+            )
+            await original_staff_message.edit(embed=new_embed)
+        
+        # 2. Notifier l'admin en MP
+        admin_id_str = self.manager.config.get("ADMIN_USER_ID")
+        if admin_id_str:
+            admin_user = self.manager.bot.get_user(int(admin_id_str))
+            if admin_user:
+                amount_text = "N/A"
+                if original_staff_message:
+                    for field in original_staff_message.embeds[0].fields:
+                        if "Montant Attendu" in field.name:
+                            amount_text = field.value
+                            break
+                
+                admin_embed = discord.Embed(
+                    title="🔔 Notification de Paiement",
+                    description=f"L'utilisateur **{interaction.user.mention}** a signalé un paiement.",
+                    color=discord.Color.gold()
+                )
+                admin_embed.add_field(name="Produit", value=f"`{self.product.get('name')}` ({self.product.get('id')})", inline=False)
+                if self.option:
+                     admin_embed.add_field(name="Option", value=f"`{self.option.get('name')}`", inline=False)
+                admin_embed.add_field(name="Vérifier le paiement de", value=amount_text, inline=True)
+                admin_embed.add_field(name="Via le compte", value=f"`{self.payment_account.value}`", inline=True)
+                
+                if original_staff_message:
+                     admin_embed.add_field(name="Action Requise", value=f"Valider la transaction dans {staff_channel.mention} ou [cliquez ici]({original_staff_message.jump_url}).", inline=False)
+                
+                try:
+                    await admin_user.send(embed=admin_embed)
+                except discord.Forbidden:
+                    if staff_channel:
+                        await staff_channel.send(f"{admin_user.mention}, une transaction signalée par un utilisateur nécessite votre attention.", delete_after=300)
+
+        await interaction.followup.send("Merci ! L'administrateur a été notifié et vérifiera votre paiement sous peu.", ephemeral=True)
+
+
+class UserPaymentConfirmationView(discord.ui.View):
+    def __init__(self, manager: 'ManagerCog', transaction_id: str, staff_channel_id: int, product: dict, option: Optional[dict]):
+        super().__init__(timeout=86400) # 24h timeout
+        self.manager = manager
+        self.transaction_id = transaction_id
+        self.staff_channel_id = staff_channel_id
+        self.product = product
+        self.option = option
+
+    @discord.ui.button(label="J'ai effectué le paiement", style=discord.ButtonStyle.success)
+    async def confirm_payment_user(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = PaymentInfoModal(self.manager, self.transaction_id, self.staff_channel_id, self.product, self.option)
+        await interaction.response.send_modal(modal)
+        
+        button.disabled = True
+        button.label = "✅ Confirmation envoyée"
+        await interaction.message.edit(view=self)
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+        # On ne peut pas facilement éditer le message en DM après timeout, donc on le laisse tel quel.
+
+class ProductActionView(discord.ui.View):
+    def __init__(self, product: Dict, manager: 'ManagerCog', user: discord.User):
+        super().__init__(timeout=300)
+        self.product = product
+        self.manager = manager
+        
+        user_id_str = str(user.id)
+        if manager.user_data.get(user_id_str, {}).get("store_credit", 0) > 0:
+            credit_button = discord.ui.Button(label="💰 Acheter avec Crédit", style=discord.ButtonStyle.primary, custom_id=f"buy_credit:{product['id']}")
+            credit_button.callback = self.buy_with_credit_callback
+            self.add_item(credit_button)
+
+    @discord.ui.button(label="🛒 Acheter ce produit", style=discord.ButtonStyle.success)
+    async def buy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.start_purchase_flow(interaction, use_credit=False)
+    
+    async def buy_with_credit_callback(self, interaction: discord.Interaction):
+        await self.start_purchase_flow(interaction, use_credit=True)
+        
+    async def start_purchase_flow(self, interaction: discord.Interaction, use_credit: bool):
+        if self.product.get("options"):
+            view = OptionSelectView(product=self.product, manager=self.manager, use_credit=use_credit)
+            await interaction.response.send_message("Ce produit a plusieurs options. Veuillez en choisir une :", view=view, ephemeral=True)
+        else:
+            await self.send_purchase_confirmation(interaction, self.product, option=None, use_credit=use_credit)
+
+    async def send_purchase_confirmation(self, interaction: discord.Interaction, product: Dict, option: Optional[Dict] = None, use_credit: bool = False):
+        await interaction.response.defer(ephemeral=True)
+
+        if not self.manager: return await interaction.followup.send("Erreur critique.", ephemeral=True)
+        
+        user = interaction.user
+        user_id_str = str(user.id)
+        self.manager.initialize_user_data(user_id_str)
+        user_data = self.manager.user_data[user_id_str]
+        
+        base_price = option['price'] if option else product.get('price', 0)
+        if base_price < 0:
+             return await interaction.followup.send("Ce produit a un prix variable et ne peut être acheté directement. Veuillez contacter le staff.", ephemeral=True)
+
+        price_after_discount = base_price
+        
+        credit_used = 0
+        final_price = price_after_discount
+        
+        if use_credit:
+            user_credit = user_data.get("store_credit", 0)
+            credit_used = min(user_credit, price_after_discount)
+            final_price -= credit_used
+        
+        is_subscription = product.get("type") == "subscription"
+        currency = product.get("currency", "EUR")
+
+        embed_user = discord.Embed(title=f"Confirmation de {'Souscription' if is_subscription else 'Commande'}", color=discord.Color.gold())
+        embed_user.description = f"Vous êtes sur le point de {'souscrire à' if is_subscription else 'commander'} **{product['name']}**"
+        if option: embed_user.description += f" ({option['name']})."
+        
+        embed_user.add_field(name="Prix de base", value=f"{base_price:.2f} {currency}", inline=True)
+        if credit_used > 0:
+            embed_user.add_field(name="Crédit utilisé", value=f"- {credit_used:.2f} {currency}", inline=True)
+        
+        embed_user.add_field(name="**Total à payer**", value=f"**{final_price:.2f} {currency}**", inline=False)
+        embed_user.set_footer(text="Veuillez effectuer le paiement et confirmer ensuite.")
+
+        payment_info = self.manager.config["PAYMENT_INFO"]
+        embed_user.add_field(
+            name="Instructions de paiement",
+            value=f"Veuillez envoyer `{final_price:.2f} {currency}` à notre [PayPal.Me]({payment_info['PAYPAL_ME_LINK']}) ou directement à l'adresse `{payment_info['PAYPAL_EMAIL']}`.\n**IMPORTANT : Mettez votre pseudo Discord `{user}` en note du paiement.**",
+            inline=False
+        )
+
+        staff_channel_name = self.manager.config["CHANNELS"]["PENDING_PAYMENTS"]
+        staff_channel = discord.utils.get(interaction.guild.text_channels, name=staff_channel_name)
+        
+        if not staff_channel:
+            return await interaction.followup.send("Erreur: Le canal de paiement du staff est introuvable.", ephemeral=True)
+
+        transaction_id = str(uuid.uuid4())
+        user_view = UserPaymentConfirmationView(self.manager, transaction_id, staff_channel.id, product, option)
+
+        try:
+            await user.send(embed=embed_user, view=user_view)
+        except discord.Forbidden:
+            return await interaction.followup.send("Je n'ai pas pu vous envoyer les instructions en message privé. Veuillez vérifier vos paramètres de confidentialité.", ephemeral=True)
+
+        embed_staff = discord.Embed(title=f"Nouvelle {'Souscription' if is_subscription else 'Commande'} en Attente", color=discord.Color.orange(), timestamp=datetime.now(timezone.utc))
+        embed_staff.add_field(name="Utilisateur", value=f"{user.mention} (`{user.id}`)", inline=True)
+        embed_staff.add_field(name="Produit", value=f"{product['name']}" + (f" ({option['name']})" if option else ""), inline=True)
+        embed_staff.add_field(name="Montant Attendu", value=f"`{final_price:.2f} {currency}`", inline=True)
+        embed_staff.set_footer(text=f"ID de Transaction: {transaction_id}")
+        
+        # --- Persistance ---
+        async with self.manager.data_lock:
+            self.manager.pending_actions['transactions'][transaction_id] = {
+                "user_id": user.id,
+                "product_id": product['id'],
+                "option_name": option['name'] if option else None,
+                "credit_used": credit_used
+            }
+            await self.manager._save_json_data_async(self.manager.PENDING_ACTIONS_FILE, self.manager.pending_actions)
+
+        await staff_channel.send(embed=embed_staff, view=PaymentVerificationView(self.manager))
+        
+        await interaction.followup.send("Les instructions de paiement vous ont été envoyées en message privé !", ephemeral=True)
+
+
+class CatalogueCog(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        self.manager: Optional[ManagerCog] = None
+        self.PRODUCTS_PER_PAGE = 5
+
+    async def cog_load(self):
+        # Cette méthode est appelée lors du chargement du cog.
+        self.manager = self.bot.get_cog('ManagerCog')
+        if not self.manager:
+            print("ERREUR CRITIQUE: CatalogueCog n'a pas pu trouver le ManagerCog.")
+        else:
+            # Enregistre la vue persistante
+            self.bot.add_view(PaymentVerificationView(self.manager))
+
+
+    def get_display_price(self, product: Dict[str, Any], discount: float = 0.0) -> str:
+        currency = product.get("currency", "EUR")
+        if "options" in product and product.get("options"):
+            try:
+                prices = [opt['price'] for opt in product['options']]
+                min_price = min(prices)
+                min_price_disc = min_price * (1 - discount)
+                return f"À partir de `{min_price_disc:.2f} {currency}`"
+            except (ValueError, TypeError):
+                 return "`Prix variable`" # Fallback for empty or invalid options
+        elif "price_text" in product:
+            return f"`{product['price_text']}`"
+        else:
+            price = product.get('price', 0.0)
+            if price < 0:
+                return "`Prix sur demande`"
+            final_price = price * (1 - discount)
+            return f"`{final_price:.2f} {currency}`"
+
+    def create_product_embed(self, product: Dict[str, Any], discount: float = 0.0) -> discord.Embed:
+        is_subscription = product.get("type") == "subscription"
+        embed = discord.Embed(
+            title=f"🛒 {product.get('name', 'Produit sans nom')}",
+            description=product.get("description", "Pas de description."),
+            color=discord.Color.blue()
+        )
+        embed.set_footer(text=f"ID du produit : {product.get('id')}")
+        if product.get("image_url"):
+            embed.set_thumbnail(url=product.get("image_url"))
+        
+        embed.add_field(name="Prix", value=self.get_display_price(product, discount), inline=True)
+        embed.add_field(name="Catégorie", value=product.get("category", "N/A"), inline=True)
+        return embed
+    
+    @app_commands.command(name="catalogue", description="Affiche les produits disponibles.")
+    async def catalogue(self, interaction: discord.Interaction):
+        if not self.manager: return await interaction.response.send_message("Erreur interne.", ephemeral=True)
+        categories = sorted(list(set(p['category'] for p in self.manager.products)))
+        view = CategorySelectionView(self, categories, self.PRODUCTS_PER_PAGE)
+        await interaction.response.send_message("Veuillez choisir une catégorie :", view=view, ephemeral=True)
+
+
+    @app_commands.command(name="produit", description="Affiche les détails d'un produit par son ID.")
+    @app_commands.describe(id="L'ID unique du produit (ex: vbucks)")
+    async def produit(self, interaction: discord.Interaction, id: str):
+        if not self.manager: return await interaction.response.send_message("Erreur interne du bot.", ephemeral=True)
+        
+        product = self.manager.get_product(id)
+        if not product:
+            return await interaction.response.send_message("Ce produit est introuvable.", ephemeral=True)
+
+        user_id_str = str(interaction.user.id)
+        self.manager.initialize_user_data(user_id_str)
+        
+        discount = 0.0 # Placeholder pour un futur système de réduction
+
+        embed = self.create_product_embed(product, discount)
+        view = ProductActionView(product, self.manager, interaction.user)
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+
+class OptionSelectView(discord.ui.View):
+    def __init__(self, product: Dict, manager: 'ManagerCog', use_credit: bool):
+        super().__init__(timeout=180)
+        self.product = product
+        self.manager = manager
+        self.use_credit = use_credit
+        currency = product.get("currency", "EUR")
+
+        options = [
+            discord.SelectOption(label=f"{opt['name']} - {opt['price']:.2f} {currency}", value=opt['name'])
+            for opt in product.get('options', [])
+        ]
+        self.select_menu = discord.ui.Select(placeholder="Choisissez une option...", options=options)
+        self.select_menu.callback = self.on_select
+        self.add_item(self.select_menu)
+    
+    async def on_select(self, interaction: discord.Interaction):
+        selected_option_name = self.select_menu.values[0]
+        selected_option = next(opt for opt in self.product['options'] if opt['name'] == selected_option_name)
+        
+        action_view = ProductActionView(self.product, self.manager, interaction.user)
+        await action_view.send_purchase_confirmation(interaction, self.product, option=selected_option, use_credit=self.use_credit)
+
+class PaymentVerificationView(discord.ui.View):
+    def __init__(self, manager: 'ManagerCog'):
+        super().__init__(timeout=None)
+        self.manager = manager
+
+    async def _handle_action(self, interaction: discord.Interaction, action: str):
+        await interaction.response.defer()
+
+        footer_text = interaction.message.embeds[0].footer.text
+        match = re.search(r"ID de Transaction: ([a-f0-9-]+)", footer_text)
+        if not match:
+            return await interaction.followup.send("ID de transaction introuvable dans le message.", ephemeral=True)
+        
+        transaction_id = match.group(1)
+
+        async with self.manager.data_lock:
+            transaction_data = self.manager.pending_actions["transactions"].get(transaction_id)
+            if not transaction_data:
+                self.children[0].disabled = True
+                self.children[1].disabled = True
+                await interaction.message.edit(view=self)
+                return await interaction.followup.send("Cette transaction est introuvable ou a déjà été traitée.", ephemeral=True)
+
+            original_embed = interaction.message.embeds[0]
+            new_embed = original_embed.copy()
+            
+            if action == "confirm":
+                product = self.manager.get_product(transaction_data['product_id'])
+                option = None
+                if transaction_data.get('option_name') and product.get('options'):
+                    option = next((opt for opt in product['options'] if opt['name'] == transaction_data['option_name']), None)
+
+                purchase_successful, message = await self.manager.record_purchase(
+                    user_id=transaction_data['user_id'],
+                    product=product,
+                    option=option,
+                    credit_used=transaction_data['credit_used'],
+                    guild_id=interaction.guild_id
+                )
+
+                if not purchase_successful:
+                    return await interaction.followup.send(f"❌ Erreur lors de la confirmation: {message}", ephemeral=True)
+
+                new_embed.title = "✅ Paiement Validé"
+                new_embed.color = discord.Color.green()
+                new_embed.set_footer(text=f"Validé par {interaction.user.display_name} | {original_embed.footer.text}")
+                
+                await interaction.followup.send(f"Paiement pour `{product['name']}` confirmé par {interaction.user.mention}.")
+                
+                buyer = interaction.guild.get_member(transaction_data['user_id'])
+                if buyer:
+                    is_subscription = product.get("type") == "subscription"
+                    embed_delivery = discord.Embed(
+                        title=f"✅ {'Abonnement Activé' if is_subscription else 'Commande Complétée'}",
+                        color=discord.Color.green()
+                    )
+                    if is_subscription:
+                        embed_delivery.description = f"Merci pour votre soutien ! Votre abonnement **{product['name']}** est maintenant actif. Profitez de vos avantages exclusifs !"
+                    else:
+                        embed_delivery.description = f"Merci pour votre achat de **{product['name']}**!\nUn administrateur va vous contacter en message privé pour vous livrer votre produit dans les plus brefs délais (généralement 24/48h max)."
+                    
+                    try:
+                        await buyer.send(embed=embed_delivery)
+                    except discord.Forbidden:
+                        await interaction.followup.send(f"Impossible d'envoyer la confirmation de livraison à {buyer.mention}. Leurs MPs sont fermés.", ephemeral=True)
+
+            elif action == "deny":
+                new_embed.title = "❌ Paiement Refusé"
+                new_embed.color = discord.Color.red()
+                new_embed.set_footer(text=f"Refusé par {interaction.user.display_name} | {original_embed.footer.text}")
+                await interaction.followup.send(f"Paiement refusé par {interaction.user.mention}.")
+
+            self.children[0].disabled = True
+            self.children[1].disabled = True
+            await interaction.message.edit(embed=new_embed, view=self)
+
+            del self.manager.pending_actions["transactions"][transaction_id]
+            await self.manager._save_json_data_async(self.manager.PENDING_ACTIONS_FILE, self.manager.pending_actions)
+
+    @discord.ui.button(label="✅ Confirmer le Paiement", style=discord.ButtonStyle.success, custom_id="confirm_payment_button")
+    async def confirm_payment_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self._handle_action(interaction, "confirm")
+    
+    @discord.ui.button(label="❌ Refuser le Paiement", style=discord.ButtonStyle.danger, custom_id="deny_payment_button")
+    async def deny_payment_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self._handle_action(interaction, "deny")
+
+
+class CategorySelectionView(discord.ui.View):
+    def __init__(self, cog: 'CatalogueCog', categories: List[str], products_per_page: int):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.manager = cog.manager
+        self.products_per_page = products_per_page
+        self.current_page = 0
+        self.current_category = None
+        
+        # Le select pour les catégories
+        self.category_select = discord.ui.Select(
+            placeholder="Choisissez une catégorie...",
+            options=[discord.SelectOption(label=cat) for cat in categories]
+        )
+        self.category_select.callback = self.on_category_select
+        self.add_item(self.category_select)
+
+        # Les boutons de pagination (initialement désactivés)
+        self.prev_button = discord.ui.Button(label="◀️ Précédent", style=discord.ButtonStyle.secondary, disabled=True)
+        self.prev_button.callback = self.on_prev
+        self.add_item(self.prev_button)
+
+        self.next_button = discord.ui.Button(label="Suivant ▶️", style=discord.ButtonStyle.secondary, disabled=True)
+        self.next_button.callback = self.on_next
+        self.add_item(self.next_button)
+
+    async def on_category_select(self, interaction: discord.Interaction):
+        self.current_category = self.category_select.values[0]
+        self.current_page = 0
+        await self.update_message(interaction)
+
+    async def update_message(self, interaction: discord.Interaction):
+        products_in_category = [p for p in self.manager.products if p.get('category') == self.current_category]
+        
+        start_index = self.current_page * self.products_per_page
+        end_index = start_index + self.products_per_page
+        products_to_display = products_in_category[start_index:end_index]
+
+        embed = discord.Embed(title=f"Catalogue - {self.current_category}", color=discord.Color.blurple())
+        if not products_to_display:
+            embed.description = "Aucun produit dans cette catégorie pour le moment."
+        else:
+            for product in products_to_display:
+                embed.add_field(
+                    name=f"{product['name']}",
+                    value=f"ID: `{product['id']}`\nPrix: {self.manager.get_product_display_price(product)}\n*Utilisez `/produit id:{product['id']}` pour plus de détails.*",
+                    inline=False
+                )
+        
+        total_pages = -(-len(products_in_category) // self.products_per_page)
+        embed.set_footer(text=f"Page {self.current_page + 1} / {total_pages}")
+        
+        self.prev_button.disabled = self.current_page == 0
+        self.next_button.disabled = end_index >= len(products_in_category)
+        
+        self.prev_button.style = discord.ButtonStyle.primary if not self.prev_button.disabled else discord.ButtonStyle.secondary
+        self.next_button.style = discord.ButtonStyle.primary if not self.next_button.disabled else discord.ButtonStyle.secondary
+
+        if interaction.response.is_done():
+            await interaction.edit_original_response(content=None, embed=embed, view=self)
+        else:
+            await interaction.response.edit_message(content=None, embed=embed, view=self)
+
+    async def on_prev(self, interaction: discord.Interaction):
+        self.current_page -= 1
+        await self.update_message(interaction)
+
+    async def on_next(self, interaction: discord.Interaction):
+        self.current_page += 1
+        await self.update_message(interaction)
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(CatalogueCog(bot))
