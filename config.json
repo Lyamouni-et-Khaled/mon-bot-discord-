@@ -1,0 +1,304 @@
+
+{
+  "GUILD_ID": "VOTRE_VRAI_ID_DE_SERVEUR_ICI",
+  "ADMIN_USER_ID": "1028018456123162666",
+  "PAYMENT_INFO": {
+    "PAYPAL_ME_LINK": "https://www.paypal.me/ResellBoostfr",
+    "PAYPAL_EMAIL": "contact.resellboost@gmail.com"
+  },
+  "CHANNELS": {
+    "VERIFICATION": "✅・verification",
+    "RULES": "règlement",
+    "ANNOUNCEMENTS": "annonces",
+    "PUBLIC_PROMO": "publicité",
+    "MARKETPLACE": "marketplace",
+    "TRANSACTION_LOGS": "transactions",
+    "GIVEAWAYS": "giveaways",
+    "LEVEL_UP_ANNOUNCEMENTS": "level-ups",
+    "ACHIEVEMENT_ANNOUNCEMENTS": "succes",
+    "GAMIFICATION_INFO": "info-gamification",
+    "WEEKLY_LEADERBOARD_ANNOUNCEMENTS": "classement-hebdo",
+    "GUILD_ANNOUNCEMENTS": "annonces-guildes",
+    "GUILD_PRIVATE_CATEGORY": "🛡️ Guildes Privées",
+    "AI_CHALLENGE": "défis-ia",
+    "BOT_COMMANDS": "commandes-bots",
+    "TICKET_CREATION": "tickets",
+    "STAFF_CHAT": "staff-chat",
+    "MOD_ALERTS": "mod-alerts",
+    "TICKET_LOGS": "logs-tickets",
+    "PENDING_PAYMENTS": "paiements-en-attente",
+    "CASHOUT_REQUESTS": "cashout-requests",
+    "preuves-de-paiement": "preuves-de-paiement",
+    "preuves-affiliation": "preuves-affiliation"
+  },
+  "ROLES": {
+    "STAFF": ["Admin", "Modérateur"],
+    "SUPPORT": ["Support", "Admin", "Modérateur"],
+    "ADMIN": "Admin",
+    "MODERATOR": "Modérateur",
+    "VERIFIED": "Membre",
+    "UNVERIFIED": "Non-Vérifié",
+    "VIP": "VIP",
+    "VIP_PREMIUM": "VIP Premium",
+    "AFFILIATE_PRO": "Parrain Pro",
+    "LOYALTY_BONUS": "Bonus de Fidélité",
+    "GUILD_MASTER": "Guilde Master",
+    "PRESTIGE_LEVEL_10": "Habitué",
+    "PRESTIGE_LEVEL_20": "Expert",
+    "PRESTIGE_LEVEL_30": "VIP",
+    "PRESTIGE_LEVEL_40": "Maître",
+    "PRESTIGE_LEVEL_50": "Légende",
+    "LEADERBOARD_TOP_1_XP": "Top 1 XP 🥇",
+    "LEADERBOARD_TOP_2_XP": "Top 2 XP 🥈",
+    "LEADERBOARD_TOP_3_XP": "Top 3 XP 🥉"
+  },
+  "VERIFICATION_SYSTEM": {
+      "ENABLED": true,
+      "WELCOME_MESSAGE_TITLE": "👋 Bienvenue sur ResellBoost !",
+      "WELCOME_MESSAGE_DESCRIPTION": "Pour accéder au reste du serveur, veuillez lire le {rules_channel} et cliquer sur le bouton ci-dessous pour accepter le règlement."
+  },
+  "SERVER_RULES": {
+    "TITLE": "📜 Règlement du Serveur ResellBoost 📜",
+    "INTRODUCTION": "Afin de maintenir une communauté saine, respectueuse et productive, veuillez prendre connaissance des règles suivantes. Toute infraction sera sanctionnée.",
+    "RULES_LIST": [
+      "**1. Respect et Courtoisie :** Toute forme d'insulte, de harcèlement, de discrimination est strictement interdite.",
+      "**2. Contenu Approprié :** Le partage de contenu NSFW, gore ou choquant est interdit.",
+      "**3. Publicité et Promotions :** Toute forme de publicité (liens Discord, etc.) est autorisée **uniquement** dans le salon #publicité. Toute promotion en dehors de ce canal sera supprimée.",
+      "**4. Pas de Spam :** Le spam, le flood, l'abus de majuscules sont interdits.",
+      "**5. Canaux Thématiques :** Veuillez utiliser les canaux appropriés pour vos discussions. Les conversations générales vont dans #général.",
+      "**6. Transactions et Marketplace :** Les achats via le bot sont sécurisés. Pour les ventes et achats entre membres dans #marketplace, vous agissez à vos propres risques. Le staff n'interviendra pas en cas de litige.",
+      "**7. Respect du Staff :** Les décisions des modérateurs et des administrateurs sont finales. En cas de désaccord, ouvrez un ticket dans #tickets."
+    ],
+    "CONCLUSION": "En cliquant sur le bouton de vérification, vous confirmez avoir lu et accepté l'ensemble de ce règlement."
+  },
+  "SERVER_SETUP_CONFIG": {
+    "ROLES": [
+        {"name": "Admin", "permissions": {"administrator": true}, "color": "0xe91e63", "hoist": true},
+        {"name": "Modérateur", "permissions": {"kick_members": true, "ban_members": true, "manage_messages": true, "moderate_members": true}, "color": "0xe74c3c", "hoist": true},
+        {"name": "Support", "permissions": {}, "color": "0x3498db", "hoist": true},
+        {"name": "VIP Premium", "permissions": {}, "color": "0xff00ff", "hoist": true},
+        {"name": "Parrain Pro", "permissions": {}, "color": "0x00ffff", "hoist": true},
+        {"name": "Guilde Master", "permissions": {}, "color": "0x992d22", "hoist": true},
+        {"name": "Légende", "permissions": {}, "color": "0xffa500", "hoist": true},
+        {"name": "Maître", "permissions": {}, "color": "0x7289da", "hoist": true},
+        {"name": "VIP", "permissions": {}, "color": "0xdda0dd", "hoist": true},
+        {"name": "Expert", "permissions": {}, "color": "0x1abc9c", "hoist": true},
+        {"name": "Habitué", "permissions": {}, "color": "0x2ecc71", "hoist": true},
+        {"name": "Bonus de Fidélité", "permissions": {}, "color": "0x95a5a6", "hoist": false},
+        {"name": "Top 1 XP 🥇", "permissions": {}, "color": "0xffd700", "hoist": true},
+        {"name": "Top 2 XP 🥈", "permissions": {}, "color": "0xc0c0c0", "hoist": true},
+        {"name": "Top 3 XP 🥉", "permissions": {}, "color": "0xcd7f32", "hoist": true},
+        {"name": "Membre", "permissions": {}, "color": "0x99aab5", "hoist": false},
+        {"name": "Non-Vérifié", "permissions": {}, "color": "0x7f8c8d", "hoist": false}
+      ],
+    "CATEGORIES": {
+      "🚦 ACCUEIL": {
+        "permissions": { "Non-Vérifié": {"view_channel": true, "send_messages": false}, "Membre": {"view_channel": true, "send_messages": false} },
+        "channels": [ {"name": "accueil", "type": "text"}, {"name": "✅・verification", "type": "text"}, {"name": "règlement", "type": "text"}, {"name": "annonces", "type": "text"} ]
+      },
+      "📢 COMMUNAUTÉ": {
+        "permissions": { "Membre": {"view_channel": true, "send_messages": true}, "Non-Vérifié": {"view_channel": false} },
+        "channels": [ {"name": "général", "type": "text"}, {"name": "publicité", "type": "text"}, {"name": "suggestions", "type": "text"}, {"name": "marketplace", "type": "forum"} ]
+      },
+      "🛡️ Guildes Publiques": {
+        "permissions": { "Membre": {"view_channel": true}, "Non-Vérifié": {"view_channel": false}},
+        "channels": [
+          {"name": "info-guildes", "type": "text", "permissions": {"send_messages": false}},
+          {"name": "annonces-guildes", "type": "text", "permissions": {"send_messages": false}},
+          {"name": "classement-guildes", "type": "text", "permissions": {"send_messages": false}}
+        ]
+      },
+       "🛡️ Guildes Privées": {
+        "permissions": { "@everyone": {"view_channel": false} },
+        "channels": []
+      },
+      "✨ GAMIFICATION": {
+        "permissions": { "Membre": {"view_channel": true}, "Non-Vérifié": {"view_channel": false} },
+        "channels": [ {"name": "info-gamification", "type": "text", "permissions": {"send_messages": false}}, {"name": "level-ups", "type": "text", "permissions": {"send_messages": false}}, {"name": "succes", "type": "text", "permissions": {"send_messages": false}}, {"name": "classement-hebdo", "type": "text", "permissions": {"send_messages": false}}, {"name": "défis-ia", "type": "text", "permissions": {"send_messages": false}}, {"name": "commandes-bots", "type": "text"} ]
+      },
+      "💰 GAINS & PREUVES": {
+        "permissions": { "Membre": {"view_channel": true}, "Non-Vérifié": {"view_channel": false} },
+        "channels": [
+          {
+            "name": "transactions", "type": "text",
+            "permissions": { "Membre": { "send_messages": false, "add_reactions": true } }
+          },
+          {
+            "name": "preuves-de-paiement", "type": "text",
+            "permissions": { "Membre": { "send_messages": true, "attach_files": true, "embed_links": true } }
+          },
+          {
+            "name": "preuves-affiliation", "type": "text",
+            "permissions": { "Membre": { "send_messages": true, "attach_files": true, "embed_links": true } }
+          }
+        ]
+      },
+      "🔒 SUPPORT": {
+        "permissions": { "Membre": {"view_channel": true}, "Non-Vérifié": {"view_channel": false} },
+        "channels": [ {"name": "aide", "type": "text"}, {"name": "tickets", "type": "text"} ]
+      },
+      "💎 ESPACE VIP": {
+        "permissions": { "@everyone": {"view_channel": false}, "VIP": {"view_channel": true}, "VIP Premium": {"view_channel": true} },
+        "channels": [ {"name": "salon-vip", "type": "text"}, {"name": "lounge-premium", "type": "text"} ]
+      },
+      "🔒 STAFF ONLY": {
+        "permissions": { "@everyone": {"view_channel": false} },
+        "channels": [ {"name": "staff-chat", "type": "text"}, {"name": "mod-alerts", "type": "text"}, {"name": "logs-tickets", "type": "text"}, {"name": "paiements-en-attente", "type": "text"}, {"name": "cashout-requests", "type": "text"} ]
+      }
+    }
+  },
+  "TICKET_SYSTEM": {
+    "TICKET_CATEGORY_NAME": "Tickets",
+    "TICKET_CREATION_MESSAGE": "Besoin d'aide ? Cliquez sur le bouton ci-dessous pour ouvrir un ticket de support. Notre équipe vous répondra dès que possible.",
+    "TICKET_TYPES": [
+        {"label": "Problème de Paiement", "description": "Pour tout souci lié à une transaction.", "ping_role": "Admin"},
+        {"label": "Question sur un Produit", "description": "Si vous avez besoin d'infos avant d'acheter."},
+        {"label": "Support Technique", "description": "Pour les problèmes avec nos outils ou services."},
+        {"label": "Signaler un Membre", "description": "Pour signaler un comportement inapproprié.", "ping_role": "Modérateur"},
+        {"label": "Autre", "description": "Pour toute autre demande."}
+    ],
+    "AI_SUMMARY_PROMPT": "Tu es un assistant qui analyse des transcriptions de tickets de support sur Discord. Ton but est de fournir un résumé concis au format JSON. Voici la transcription :\n\n---\n{transcript}\n---\n\nAnalyse la conversation et réponds UNIQUEMENT avec un objet JSON contenant les clés suivantes :\n- `summary` (string): Un résumé très court (1-2 phrases) du problème initial de l'utilisateur.\n- `resolution` (string): Comment le problème a été résolu ou l'état final du ticket (ex: 'Problème résolu par le staff', 'L'utilisateur a reçu ses crédits', 'Ticket fermé sans résolution').\n- `user_sentiment` (string): Le sentiment général de l'utilisateur ('Positif', 'Neutre', 'Négatif').\n- `keywords` (array of strings): 3 à 5 mots-clés qui décrivent le ticket (ex: ['paiement', 'paypal', 'erreur', 'vip']).\nNe mets rien d'autre que l'objet JSON dans ta réponse."
+  },
+  "TRANSACTION_LOG_CONFIG": {
+    "ENABLED": true,
+    "CHANNEL_NAME": "transactions",
+    "MAX_USER_LOG_SIZE": 50
+  },
+  "PROFILE_CARD_CONFIG": {
+    "GLOW_EFFECT_LEVEL": 50,
+    "DEFAULT_PALETTE": {
+        "background": "#111827",
+        "surface": "#1f2937",
+        "accent": "#3b82f6",
+        "text": "#f9fafb"
+    },
+    "LEVEL_PALETTES": [
+        {"level": 10, "palette": {"background": "#1f2937", "surface": "#374151", "accent": "#10b981", "text": "#f9fafb"}},
+        {"level": 20, "palette": {"background": "#374151", "surface": "#4b5563", "accent": "#8b5cf6", "text": "#f9fafb"}},
+        {"level": 30, "palette": {"background": "#4b5563", "surface": ["#6b7280", "#4b5563"], "accent": "#ec4899", "text": "#f9fafb"}},
+        {"level": 40, "palette": {"background": "#6d28d9", "surface": ["#4c1d95", "#2e1065"], "accent": "#facc15", "text": "#f9fafb"}},
+        {"level": 50, "palette": {"background": "#991b1b", "surface": ["#f59e0b", "#facc15"], "accent": "#ffffff", "text": "#111827"}}
+    ],
+    "LEVEL_BADGES": [
+        {"level": 10, "path": "assets/badge_bronze.png"},
+        {"level": 20, "path": "assets/badge_silver.png"},
+        {"level": 30, "path": "assets/badge_gold.png"},
+        {"level": 40, "path": "assets/badge_platinum.png"},
+        {"level": 50, "path": "assets/badge_diamond.png"}
+    ]
+  },
+  "GAMIFICATION_CONFIG": {
+    "XP_SYSTEM": {
+      "ENABLED": true,
+      "ANTI_FARM_COOLDOWN_SECONDS": 60,
+      "ANTI_FARM_MIN_WORDS": 5,
+      "XP_PER_MESSAGE": [10, 20],
+      "XP_PER_VERIFIED_INVITE": 100,
+      "XP_BONUS_REFERRAL_HITS_LVL_5": 2000,
+      "REFERRAL_LVL_5_DAYS_LIMIT": 7,
+      "XP_BONUS_REFERRAL_BUYS_VIP": 5000,
+      "XP_PER_EURO_SPENT": 100,
+      "LEVEL_UP_FORMULA_BASE_XP": 150,
+      "LEVEL_UP_FORMULA_MULTIPLIER": 1.6,
+      "XP_PURCHASE": {
+        "ENABLED": true,
+        "COST_PER_XP_IN_EUR": 0.001,
+        "VIP_DISCOUNT": 0.5
+      }
+    },
+    "GUILD_SYSTEM": {
+      "ENABLED": true,
+      "MIN_LEVEL_TO_CREATE": 10,
+      "MAX_MEMBERS": 10,
+      "MIN_MEMBERS_FOR_OFFICIAL_STATUS": 7,
+      "CREATION_COST": 5,
+      "FORCE_OFFICIAL_COST": 3,
+      "NAME_CHANGE_COST": 4
+    },
+    "LEVEL_REWARDS": {
+        "10": {"type": "role", "value": "Habitué"},
+        "20": {"type": "role", "value": "Expert"},
+        "30": {"type": "role", "value": "VIP"},
+        "40": {"type": "role", "value": "Maître"},
+        "50": {"type": "role", "value": "Légende"}
+    },
+    "PRESTIGE_LEVELS": {
+        "10": {"description": "Devenir Recruteur : Avoir 3 filleuls qui atteignent le Niveau 5.", "xp_bonus": 0.05},
+        "20": {"description": "Prouver son Influence : Générer 20€ de ventes via affiliation.", "xp_bonus": 0.10},
+        "30": {"description": "Pilier de la Communauté : Avoir 1 suggestion acceptée ET aider 3 membres dans les salons d'aide.", "xp_bonus": 0.20},
+        "40": {"description": "Former la Relève : Avoir 2 de ses propres filleuls qui atteignent le Niveau 10.", "xp_bonus": 0.30},
+        "50": {"description": "Atteindre le Sommet : Finir #1 d'un classement hebdomadaire (XP ou affiliation).", "xp_bonus": 0.50}
+    },
+    "AFFILIATE_SYSTEM": {
+      "ENABLED": true,
+      "COMMISSION_TIERS": [
+        {"level": 1, "rate": 0.05},
+        {"level": 10, "rate": 0.10},
+        {"level": 20, "rate": 0.20},
+        {"level": 30, "rate": 0.30},
+        {"level": 40, "rate": 0.40},
+        {"level": 50, "rate": 0.50}
+      ],
+      "WEEKLY_BOOSTERS": {
+          "ENABLED": true,
+          "TOP_1_BOOST": 0.30,
+          "TOP_2_BOOST": 0.20,
+          "TOP_3_BOOST": 0.10
+      },
+      "AFFILIATE_PRO_SYSTEM": {
+        "ENABLED": true,
+        "PRODUCT_ID": "affiliate_pro_sub_1m",
+        "ROLE_NAME": "Parrain Pro",
+        "SUBSCRIPTION_DURATION_DAYS": 30,
+        "COMMISSION_RATE": 0.10
+      }
+    },
+    "CASHOUT_SYSTEM": {
+      "ENABLED": true,
+      "CREDIT_TO_EUR_RATE": 1.0,
+      "MINIMUM_ACCOUNT_AGE_DAYS": 7,
+      "MINIMUM_LEVEL": 5,
+      "WITHDRAWAL_THRESHOLDS": [
+        {"level": 20, "threshold": 1},
+        {"level": 5, "threshold": 10}
+      ]
+    },
+    "VIP_SYSTEM": {
+        "PREMIUM": {
+            "PRODUCT_ID": "vip_premium_sub_1w",
+            "ROLE_NAME": "VIP Premium",
+            "SUBSCRIPTION_DURATION_DAYS": 7,
+            "XP_BOOST_TIERS": [
+                {"consecutive_periods": 1, "boost": 0.15},
+                {"consecutive_periods": 2, "boost": 0.25},
+                {"consecutive_periods": 3, "boost": 0.35}
+            ],
+            "COMMISSION_BONUS_TIERS": [
+                {"consecutive_periods": 1, "bonus": 0.10},
+                {"consecutive_periods": 2, "bonus": 0.15},
+                {"consecutive_periods": 3, "bonus": 0.20}
+            ]
+        }
+    }
+  },
+  "MISSION_SYSTEM": {
+    "ENABLED": true,
+    "OPT_IN_DEFAULT": true,
+    "TEMPLATES": [
+        {"id": "send_message", "type": "daily", "description": "Envoyer {target} messages.", "target_range": [25, 50], "reward_xp_range": [100, 150]},
+        {"id": "react_to_message", "type": "daily", "description": "Réagir à {target} messages.", "target_range": [10, 20], "reward_xp_range": [75, 125]},
+        {"id": "send_message", "type": "weekly", "description": "Envoyer {target} messages au total cette semaine.", "target_range": [200, 300], "reward_xp_range": [500, 750]},
+        {"id": "affiliate_sale", "type": "weekly", "description": "Réaliser {target} ventes d'affiliation.", "target_range": [1, 3], "reward_xp_range": [1000, 1500]},
+        {"id": "affiliate_earn", "type": "weekly", "description": "Gagner {target} crédits via l'affiliation.", "target_range": [10, 20], "reward_xp_range": [1200, 1800]}
+    ]
+  },
+  "MODERATION_CONFIG": {
+    "ENABLED": true,
+    "WARNING_THRESHOLD": 3,
+    "AI_MODERATION_PROMPT": "Tu es un modérateur IA pour un serveur Discord. Analyse le message de l'utilisateur et décide d'une action. Le serveur vend des services de jeux et des formations en ligne. Le spam, les insultes, le harcèlement et le partage de liens non autorisés sont interdits, sauf dans les canaux désignés. Le partage d'informations personnelles est strictement interdit et doit entraîner une suppression et un avertissement.\n\nMessage de l'utilisateur: \"{user_message}\"\nNom du canal: \"{channel_name}\"\n\nActions possibles:\n- `PASS`: Le message est acceptable.\n- `DELETE_AND_WARN`: Le message est une publicité non autorisée, du spam léger ou une insulte mineure. Il doit être supprimé et l'utilisateur averti.\n- `DELETE_AND_TIMEOUT`: Le message contient des insultes graves, du harcèlement ou du contenu manifestement inapproprié. Supprime et mets en silencieux pour 1h.\n- `CREATE_SUPPORT_TICKET`: L'utilisateur semble avoir un problème légitime avec un service ou un paiement. Crée un ticket pour lui.\n- `WARN_PERSONAL_INFO_SHARING`: Le message contient des informations personnelles (email, numéro, adresse, etc.). Supprime-le et avertis l'utilisateur du danger.\n- `WARN`: Le message est limite (ex: toxicité légère) mais ne nécessite pas de suppression. Un simple avertissement suffit.\n- `NOTIFY_STAFF`: Le message est suspect ou nécessite une attention humaine que tu ne peux pas déterminer (ex: menace voilée, suspicion d'arnaque complexe).\n\nRéponds UNIQUEMENT avec un objet JSON contenant `action` et `reason` (une explication concise pour les logs). Ne mets rien d'autre que l'objet JSON dans ta réponse."
+  },
+  "AI_PROCESSING_CONFIG": {
+    "AI_CHALLENGE_GENERATION_PROMPT": "Tu es un générateur de défis pour une communauté Discord. Crée un défi communautaire engageant qui encourage l'aide mutuelle, la créativité ou l'activité sur le serveur. Réponds UNIQUEMENT avec un objet JSON contenant les clés 'title' (un titre accrocheur) et 'description' (une explication claire de ce que les membres doivent faire).",
+    "AI_CHALLENGE_SUBMISSION_EVALUATION_PROMPT": "Tu es une IA qui évalue si la soumission d'un utilisateur complète un défi Discord. Sois juste mais pas trop strict.\n\n**Défi :** {challenge_description}\n\n**Soumission de l'utilisateur :** {submission_text}\n\nÉvalue la soumission et réponds UNIQUEMENT avec un objet JSON contenant ces clés :\n- `is_valid` (boolean): `true` si la soumission semble raisonnablement compléter le défi, sinon `false`.\n- `reason` (string): Une phrase expliquant pourquoi c'est valide ou non.\n- `xp_reward` (integer): Si `is_valid` est `true`, attribue une récompense en XP entre 250 et 750, en fonction de la qualité et de l'effort apparent de la soumission. Sinon, 0."
+  }
+}
