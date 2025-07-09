@@ -2,7 +2,7 @@ import os
 import asyncio
 import discord
 from discord.ext import commands
-from discord import app_commands # Nécéssaire pour les décorateurs de commandes
+from discord import app_commands
 import json
 import traceback
 from flask import Flask
@@ -20,7 +20,6 @@ COGS_TO_LOAD = [
 
 BOT_TOKEN = os.environ.get("DISCORD_TOKEN")
 
-
 class ResellBoostBot(commands.Bot):
     """
     Classe personnalisée pour le bot.
@@ -33,13 +32,14 @@ class ResellBoostBot(commands.Bot):
         intents.guilds = True
         intents.invites = True
         super().__init__(command_prefix="!", intents=intents)
+        # On garde une trace pour ne synchroniser qu'une seule fois
+        self.synced = False
 
     async def setup_hook(self):
         """
-        Hook pour la configuration asynchrone.
+        Charge les extensions (cogs) au démarrage.
         """
         print("--- Démarrage du setup_hook ---")
-        
         for cog_name in COGS_TO_LOAD:
             try:
                 await self.load_extension(cog_name)
@@ -49,23 +49,31 @@ class ResellBoostBot(commands.Bot):
                 traceback.print_exc()
 
     async def on_ready(self):
-        """Événement appelé lorsque le bot est connecté et prêt."""
+        """
+        Événement appelé lorsque le bot est connecté et prêt.
+        C'EST LE MEILLEUR ENDROIT POUR SYNCHRONISER.
+        """
         print("-" * 50)
         print(f"Connecté en tant que {self.user} (ID: {self.user.id})")
         print(f"Le bot est prêt et en ligne sur {len(self.guilds)} serveur(s).")
+        
+        # --- SYNCHRONISATION FORCÉE ---
+        if not self.synced:
+            print("Tentative de synchronisation des commandes slash...")
+            try:
+                # Synchronise pour toutes les guildes où le bot se trouve.
+                # C'est plus lent mais beaucoup plus fiable.
+                synced_commands = await self.tree.sync()
+                print(f"✅ Synchronisé {len(synced_commands)} commande(s) globalement.")
+                self.synced = True
+            except Exception as e:
+                print(f"❌ Erreur critique lors de la synchronisation globale : {e}")
+                traceback.print_exc()
+        
         print("-" * 50)
-
-
-async def main_bot_logic(bot):
-    """Point d'entrée principal pour la logique du bot."""
-    if not BOT_TOKEN:
-        print("ERREUR CRITIQUE: Le token du bot (DISCORD_TOKEN) n'est pas défini dans l'environnement.")
-        return
-    await bot.start(BOT_TOKEN)
 
 # --- Bloc pour le serveur web (pour Cloud Run) ---
 app = Flask('')
-
 @app.route('/')
 def home():
     return "Le bot est en ligne."
@@ -82,34 +90,11 @@ if __name__ == "__main__":
     flask_thread.start()
     print("Serveur web pour le health check démarré.")
     
-    # On instancie le bot ici
     bot = ResellBoostBot()
-
-    # --- COMMANDE DE SYNCHRONISATION MANUELLE ---
-    @bot.tree.command(name="sync", description="[Admin] Forcer la synchronisation des commandes slash.")
-    @app_commands.default_permissions(administrator=True)
-    async def sync(interaction: discord.Interaction):
-        """
-        Commande spéciale pour forcer la mise à jour des commandes sur le serveur.
-        """
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        try:
-            # On synchronise pour la guilde actuelle
-            synced = await bot.tree.sync(guild=interaction.guild)
-            await interaction.followup.send(f"✅ Synchronisé {len(synced)} commande(s) avec succès.", ephemeral=True)
-            print(f"Synchronisation manuelle réussie pour la guilde {interaction.guild.id}. {len(synced)} commandes synchronisées.")
-        except Exception as e:
-            await interaction.followup.send(f"❌ Erreur lors de la synchronisation : {e}", ephemeral=True)
-            print(f"Erreur de synchronisation manuelle : {e}")
-
 
     print("Lancement du bot Discord...")
     try:
-        # On passe l'instance du bot à la logique principale
-        asyncio.run(main_bot_logic(bot))
-    except KeyboardInterrupt:
-        print("\nArrêt du bot.")
+        bot.run(BOT_TOKEN)
     except Exception as e:
         print(f"Une erreur inattendue est survenue lors du lancement du bot: {e}")
         traceback.print_exc()
-
