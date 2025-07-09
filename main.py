@@ -1,10 +1,11 @@
-
 import os
 import asyncio
 import discord
 from discord.ext import commands
 import json
 import traceback
+from flask import Flask
+from threading import Thread
 
 # --- Configuration Globale ---
 COGS_TO_LOAD = [
@@ -16,8 +17,7 @@ COGS_TO_LOAD = [
     'cogs.guild_cog'
 ]
 
-# Le token est maintenant lu depuis les variables d'environnement,
-# ce qui est la méthode sécurisée pour le déploiement sur le cloud.
+# Le token est lu depuis les variables d'environnement, ce qui est sécurisé.
 BOT_TOKEN = os.environ.get("DISCORD_TOKEN")
 
 
@@ -49,7 +49,7 @@ class ResellBoostBot(commands.Bot):
                 print(f"✅ Cog '{cog_name}' chargé avec succès.")
             except Exception as e:
                 print(f"❌ Erreur lors du chargement du cog '{cog_name}': {e}")
-                traceback.print_exc() # Affiche l'erreur complète pour le débogage
+                traceback.print_exc()
 
         # 2. Lire la configuration pour l'ID du serveur
         config = {}
@@ -69,7 +69,6 @@ class ResellBoostBot(commands.Bot):
         try:
             guild_id = int(guild_id_str)
             guild = discord.Object(id=guild_id)
-            # La synchronisation des commandes se fait ici
             synced = await self.tree.sync(guild=guild)
             print(f"✅ Synchronisé {len(synced)} commande(s) pour la guilde : {guild_id_str}.")
         except Exception as e:
@@ -83,8 +82,8 @@ class ResellBoostBot(commands.Bot):
         print("-" * 50)
 
 
-async def main():
-    """Point d'entrée principal pour lancer le bot."""
+async def main_bot_logic():
+    """Point d'entrée principal pour la logique du bot."""
     if not BOT_TOKEN:
         print("ERREUR CRITIQUE: Le token du bot (DISCORD_TOKEN) n'est pas défini dans l'environnement.")
         return
@@ -93,24 +92,37 @@ async def main():
     bot = ResellBoostBot()
     await bot.start(BOT_TOKEN)
 
+# --- Bloc pour le serveur web (pour Cloud Run) ---
+app = Flask('')
 
+@app.route('/')
+def home():
+    # Cette page simple répond à Cloud Run pour lui dire que le service est en vie.
+    return "Le bot est en ligne."
+
+def run_flask():
+  # Le port est fourni par Cloud Run via la variable d'environnement PORT.
+  port = int(os.environ.get('PORT', 8080))
+  app.run(host='0.0.0.0', port=port)
+
+# --- Point d'entrée principal du script ---
 if __name__ == "__main__":
-    # Crée les dossiers de base s'ils n'existent pas
-    if not os.path.exists('cogs'):
-        os.makedirs('cogs')
-    
-    if not os.path.exists('data'):
-        os.makedirs('data')
+    print("Lancement du service...")
 
-    if not os.path.exists('assets'):
-        os.makedirs('assets')
-        print("INFO: Dossier 'assets' créé. N'oubliez pas d'y ajouter les polices Inter-Bold.ttf et Inter-Regular.ttf.")
+    # 1. Lance le serveur web dans un thread séparé.
+    # C'est ce qui permet de répondre aux "health checks" de Cloud Run.
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
+    print("Serveur web pour le health check démarré.")
 
-    print("Lancement du ResellBoost Super-Bot...")
+    # 2. Lance le bot Discord.
+    # Le code du bot s'exécute dans le thread principal.
+    print("Lancement du bot Discord...")
     try:
-        asyncio.run(main())
+        asyncio.run(main_bot_logic())
     except KeyboardInterrupt:
         print("\nArrêt du bot.")
     except Exception as e:
-        print(f"Une erreur inattendue est survenue: {e}")
+        print(f"Une erreur inattendue est survenue lors du lancement du bot: {e}")
         traceback.print_exc()
+
